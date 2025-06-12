@@ -1,15 +1,11 @@
----
-title: Harrison Blake
----
-
 # 👋 Hi, I'm Harrison
 
-I like building things from scratch and learning how things work
+I'm a software developer who rediscovered his passion for building and understanding software
 
 ## 🧠 About Me
 
-- Former political field organizer turned engineer
-- Always learning and occasionally shipping side projects
+- 2 years as a software developer at Itron working on a large rails monolith
+- short stint as a field organizer
 
 ## 🛠️ Projects
 
