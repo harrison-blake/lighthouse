@@ -1,4 +1,4 @@
-# 👋 Hi, I'm Harrison
+# Hi, I'm Harrison
 
 I'm a software developer who rediscovered his passion for building and understanding software
 
@@ -11,7 +11,7 @@ I'm a software developer who rediscovered his passion for building and understan
 
 - **Static Site Generator** — A static site generator written in Go (currently being used for this website)
 - **Env variable Loader** — A minimal `.env` loader written in Go  
-- **Playlist Transfer Tool** — A program to transfer music playlists from spotify to youtube music (I didn't want to pay for both services)
+- **Playlist Transfer Tool** — A program to transfer playlists from spotify to youtube music
 
 ## 📫 Get in Touch
 
