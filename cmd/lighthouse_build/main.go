@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"log"
 	"strings"
-	"net/http"
+	// "net/http"
 	"path/filepath"
 	"html/template"
 	"bytes"
@@ -19,33 +19,29 @@ import (
 // REFERENCES (code directly yoinked or took inspiration from)
 // - https://github.com/gomarkdown/markdown?tab=readme-ov-file
 // - https://brandur.org/aws-intrinsic-static
-// - https://github.com/brandur/singularity
 // - https://github.com/brandur/sorg/tree/master
 // ************************************************************
 // TODO:
-//	- write my own MarkDown parser
-// 	- add tailwind
+//	- [] refactor main loop / create function that looks for differences
+//		 and rebuilds 
+//  - [] split up spinning up local server and building site
+//	- [] change up home page content
+//  - [] add cd/ci
+// 	- [] add tailwind
+//  - [] write my own markdown parser
 // ************************************************************
-
-const (
-	// global variables go brrrrrrrrrr
-	contentDir = "./content"
-	targetDir = "./public"
-)
-
-type Content struct {
-	Title string
-	Body template.HTML
-}
 
 func main() {
 	// make sure layouts directory is created so hardlink doesn't fail
-	os.MkdirAll("public/layouts", 0755)
+	err := os.MkdirAll("public/layouts", 0755)
+	if err != nil {
+		log.Print(err)
+	}
 
 	// create hard link to main layout
-	err := os.Link("./content/layouts/style.css", "./public/layouts/style.css")
+	err = os.Link("./content/layouts/style.css", "./public/layouts/style.css")
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	// create markdown parser
@@ -71,41 +67,71 @@ func main() {
 	}
 
 	// read each file into raw []bytes
-	// parse markdown files into AST using the parser you created above
+	// parse markdown files using the parser you created above
 	// feed parsed markdown into html renderer and output html
 	for _, file := range files {
-		filePath := filepath.Join(contentDir, "pages", file.Name())
-		fileContent, err := os.ReadFile(filePath)
-
+		err := processFiles(file, p, renderer, tmpl)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		doc := p.Parse(fileContent)
-		rendered := markdown.Render(doc, renderer)
-		fmt.Printf("file name: %q\n", filePath)
+	}
+	log.Println("Build was successful")
 
-		page := Content{
-			Title: strings.TrimSuffix(file.Name(), ".md"),
-			Body: template.HTML(rendered)}
+	// http.Handle("/", http.FileServer(http.Dir("./public")))
+	// fmt.Println("Serving on http://localhost:8080")
+	// log.Fatal(http.ListenAndServe(":8080", nil))
+}
 
-		var buf bytes.Buffer
-		err = tmpl.Execute(&buf, page)
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		newPath := filepath.Join(targetDir, file.Name())
-		newPath = strings.TrimSuffix(newPath, ".md") + ".html"
-		fmt.Printf("html file path: %q\n", newPath)
+// ************************************************************
+// lobal variables go brrrrrrrrrr
+// ************************************************************
+const (
+	contentDir = "./content"
+	targetDir = "./public"
+)
 
-		err = os.WriteFile(newPath, buf.Bytes(), 0660)
-		if err != nil {
-			log.Fatal(err)
-		}
+
+// ************************************************************
+// types
+// ************************************************************
+type Content struct {
+	Title string
+	Body template.HTML
+}
+
+// ************************************************************
+// types
+// ************************************************************
+func processFiles(file os.DirEntry, p *parser.Parser, renderer *html.Renderer, tmpl *template.Template) error {
+	filePath := filepath.Join(contentDir, "pages", file.Name())
+	fileContent, err := os.ReadFile(filePath)
+
+	if err != nil {
+		return err
 	}
 
-	http.Handle("/", http.FileServer(http.Dir("./public")))
-	fmt.Println("Serving on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	doc := p.Parse(fileContent)
+	rendered := markdown.Render(doc, renderer)
+
+	page := Content{
+		Title: strings.TrimSuffix(file.Name(), ".md"),
+		Body: template.HTML(rendered)}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, page)
+	if err != nil {
+		return err
+	}
+
+	newPath := filepath.Join(targetDir, file.Name())
+	newPath = strings.TrimSuffix(newPath, ".md") + ".html"
+
+	err = os.WriteFile(newPath, buf.Bytes(), 0660)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
