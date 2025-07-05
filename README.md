@@ -4,4 +4,4 @@ This repository contains the source code for my static site generator. It's used
 
 ## Technical Details
 
-Static site generator written in Golang used to build and deploy my site.
+The build process is using Golang.

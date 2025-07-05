@@ -68,28 +68,7 @@ func main() {
 	}
 
 	if localhost == true {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case "/":
-				http.ServeFile(w, r, "./public/pages/index.html")
-			case "/index.html":
-				http.ServeFile(w, r, "./public/pages/index.html")
-			case "/now.html":
-				http.ServeFile(w, r, "./public/pages/now.html")
-			case "/about.html":
-				http.ServeFile(w, r, "./public/pages/about.html")
-			case "/bits/":
-				http.ServeFile(w, r, "./public/bits/index.html")
-			case "/bits/index.html":
-				http.ServeFile(w, r, "./public/bits/index.html")
-			case "/stylesheets/base.css":
-				w.Header().Set("Content-Type", "text/css")
-				http.ServeFile(w, r, "./public/stylesheets/base.css")
-			default:
-				http.NotFound(w, r)
-			}
-		})
-
+		http.Handle("/", http.FileServer(http.Dir("./public")))
 		log.Println("Serving on http://localhost:8080")
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}
@@ -103,8 +82,10 @@ var localhost = true
 var contentDir = "./content"
 var outputDir = "./public"
 var outputDirs = []string{
+	"home",
 	"bits",
-	"pages",
+	"about",
+	"now",
 	"stylesheets",
 }
 
@@ -155,7 +136,11 @@ func processFiles(file os.DirEntry, dir string, p *parser.Parser, renderer *html
 		return err
 	}
 
+	// root page should be in public dir
 	newPath := filepath.Join(outputDir, dir, file.Name())
+	if dir == "home" && file.Name() == "index.md" {
+		newPath = filepath.Join(outputDir, file.Name())
+	}
 	newPath = strings.TrimSuffix(newPath, ".md") + ".html"
 
 	err = os.WriteFile(newPath, buf.Bytes(), 0660)
