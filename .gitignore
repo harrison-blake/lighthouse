@@ -1,5 +1,2 @@
 # secrets and environment variables
 ./.env
-
-# any public files produced from the build
-./public/*

@@ -8,10 +8,13 @@ import (
 	"path/filepath"
 	"html/template"
 	"bytes"
+	"fmt"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+
+	"github.com/harrison-blake/envreader"
 )
 
 // ************************************************************
@@ -22,6 +25,19 @@ import (
 // ************************************************************
 
 func main() {
+	err := envreader.Load("./.env")
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println("env variables loaded")
+
+    serveLocalhost, err := ParseBool(os.Getenv("SERVE_LOCALHOST"))
+    if err != nil {
+		log.Print(err)
+	}
+
+	log.Printf("serveLocalhost set to: %v", serveLocalhost)
+
 	outputDirs := []string{
 		"home",
 		"bits",
@@ -33,9 +49,8 @@ func main() {
 	count, err := CreateOutputDirs("./public", outputDirs)
 	if err != nil {
 		log.Print(err)
-	} else {
-		log.Printf("%v directories created", count)
 	}
+	log.Printf("%v directories created", count)
 
 	// create hard link to main layout
 	err = os.Link("./content/stylesheets/base.css", "./public/stylesheets/base.css")
@@ -75,11 +90,11 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-
-		log.Println("build finished")
 	}
 
-	if localhost == true {
+	log.Println("build finished")
+
+	if serveLocalhost == true {
 		http.Handle("/", http.FileServer(http.Dir("./public")))
 		log.Println("Serving on http://localhost:8080")
 		log.Fatal(http.ListenAndServe(":8080", nil))
@@ -89,7 +104,6 @@ func main() {
 // ************************************************************
 // global variables go brrrrrrrrrr
 // ************************************************************
-var localhost = true
 var contentDir = "./content"
 var outputDir = "./public"
 
@@ -104,6 +118,17 @@ type Content struct {
 // ************************************************************
 // functions
 // ************************************************************
+
+func ParseBool(str string) (bool, error) {
+	switch str {
+	case "true", "True", "TRUE", "t", "T", "1":
+		return true, nil
+	case "false", "False", "FALSE", "f", "F", "0":
+		return false, nil
+	}
+	// defaults to false
+	return false, fmt.Errorf("cannot parse '%s' to bool", str)
+}
 
 func CreateOutputDirs(targetDir string, outputDirs []string) (count uint32, err error) {
 	count = 0

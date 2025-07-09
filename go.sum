@@ -1,2 +1,4 @@
 github.com/gomarkdown/markdown v0.0.0-20250311123330-531bef5e742b h1:EY/KpStFl60qA17CptGXhwfZ+k1sFNJIUNR8DdbcuUk=
 github.com/gomarkdown/markdown v0.0.0-20250311123330-531bef5e742b/go.mod h1:JDGcbDT52eL4fju3sZ4TeHGsQwhG9nbDV21aMyhwPoA=
+github.com/harrison-blake/envreader v0.1.0 h1:UiUQ74B+BTcIsZXtDadhT33FOyBtFJxXo1oqqZgD/G0=
+github.com/harrison-blake/envreader v0.1.0/go.mod h1:VIbx0l2elYmM7dpH6jGNSTPxol8m8jkRcb42rci37bM=
