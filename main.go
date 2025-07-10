@@ -13,29 +13,20 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
-
-	"github.com/harrison-blake/envreader"
 )
 
 // ************************************************************
 // REFERENCES (code directly yoinked or took inspiration from)
-// - https://github.com/gomarkdown/markdown?tab=readme-ov-file
 // - https://brandur.org/aws-intrinsic-static
-// - https://github.com/brandur/sorg/tree/master
+// - https://github.com/brandur/sorg
+// - https://github.com/gomarkdown/markdown?tab=readme-ov-file
 // ************************************************************
 
 func main() {
-	err := envreader.Load("./.env")
-    if err != nil {
-        log.Fatal(err)
-    }
-    log.Println("env variables loaded")
-
     serveLocalhost, err := ParseBool(os.Getenv("SERVE_LOCALHOST"))
     if err != nil {
 		log.Print(err)
 	}
-
 	log.Printf("serveLocalhost set to: %v", serveLocalhost)
 
 	outputDirs := []string{
