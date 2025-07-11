@@ -15,7 +15,7 @@ install:
 
 .PHONY: sync
 sync: check-target-dir check-s3-bucket
-	aws s3 sync $(TARGET_DIR) s3://$(S3_BUCKET)
+	aws s3 sync ./public s3://$(S3_BUCKET)
 
 .PHONY: build
 build: 

@@ -25,7 +25,7 @@ import (
 func main() {
     serveLocalhost, err := ParseBool(os.Getenv("SERVE_LOCALHOST"))
     if err != nil {
-		log.Print(err)
+		log.Println("SERVE_LOCALHOST not found")
 	}
 	log.Printf("serveLocalhost set to: %v", serveLocalhost)
 
