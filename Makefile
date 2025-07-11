@@ -14,7 +14,7 @@ install:
 	go install .
 
 .PHONY: sync
-sync: check-target-dir check-s3-bucket
+sync: check-s3-bucket
 	aws s3 sync ./public s3://$(S3_BUCKET)
 
 .PHONY: build
@@ -36,12 +36,6 @@ endif
 check-cloudfront-id-root:
 ifndef CLOUDFRONT_ID_ROOT
 	$(error CLOUDFRONT_ID_ROOT is required)
-endif
-
-.PHONY: check-target-dir
-check-target-dir:
-ifndef TARGET_DIR
-	$(error TARGET_DIR is required)
 endif
 
 .PHONY: check-s3-bucket
