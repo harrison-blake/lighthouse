@@ -68,3 +68,22 @@ nav ul li a {
 nav ul li a:hover {
     text-decoration: underline;
 }
+
+.home-divider {
+    border: 0;
+    height: 1px;
+    background: #333;
+}
+
+.side-by-side {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.side-by-side > div {
+    flex: 1;
+    text-align: center;
+    font-size: 0.9em;
+}

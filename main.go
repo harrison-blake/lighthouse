@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
@@ -30,12 +31,11 @@ func main() {
 	log.Printf("serveLocalhost set to: %v", serveLocalhost)
 
 	outputDirs := []string{
-		"home",
 		"bits",
 		"about",
 		"now",
 		"stylesheets",
-}
+	}
 
 	count, err := CreateOutputDirs("./public", outputDirs)
 	if err != nil {
@@ -43,10 +43,20 @@ func main() {
 	}
 	log.Printf("%v directories created", count)
 
-	// create hard link to main layout
-	err = os.Link("./content/stylesheets/base.css", "./public/stylesheets/base.css")
+	src, err := os.Open("./content/stylesheets/base.css")
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
+	}
+	defer src.Close()
+
+	dst, err := os.Create("./public/stylesheets/base.css")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		log.Fatal(err)
 	}
 	// markdown parser extensions
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
@@ -58,13 +68,13 @@ func main() {
 
 	// create html template
 	// allows for injection of title and body
-	tmpl, err := template.ParseFiles("templates/base.html")
+	baseTmpl, err := template.ParseFiles("templates/base.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, dir := range outputDirs {
-		if dir == "stylesheets" {
+		if dir == "stylesheets" || dir == "home" {
 			continue
 		}
 		files, err := os.ReadDir(filepath.Join(contentDir, dir))
@@ -76,11 +86,16 @@ func main() {
 			// can't resuse parser so create 1 for each loop
 			p := parser.NewWithExtensions(extensions)
 
-			err := ProcessFiles(file, dir, p, renderer, tmpl)
+			err := ProcessFiles(file, dir, p, renderer, baseTmpl)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
+	}
+
+	err = CreateHomePage(extensions, renderer)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	log.Println("build finished")
@@ -103,12 +118,67 @@ var outputDir = "./public"
 // ************************************************************
 type Content struct {
 	Title string
-	Body template.HTML
+	Body  template.HTML
+}
+
+type HomeContent struct {
+	Title    string
+	Body     template.HTML
+	Projects template.HTML
+	Contact  template.HTML
 }
 
 // ************************************************************
 // functions
 // ************************************************************
+
+func CreateHomePage(extensions parser.Extensions, renderer *html.Renderer) error {
+	homeTmpl, err := template.ParseFiles("templates/home.html")
+	if err != nil {
+		return err
+	}
+
+	files, err := os.ReadDir("./content/home")
+	if err != nil {
+		return err
+	}
+
+	homeContent := HomeContent{Title: "Home"}
+
+	for _, file := range files {
+		p := parser.NewWithExtensions(extensions)
+		filePath := filepath.Join(contentDir, "home", file.Name())
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			return err
+		}
+
+		astContent := p.Parse(fileContent)
+		mdContent := markdown.Render(astContent, renderer)
+
+		switch file.Name() {
+		case "index.md":
+			homeContent.Body = template.HTML(mdContent)
+		case "projects.md":
+			homeContent.Projects = template.HTML(mdContent)
+		case "contact.md":
+			homeContent.Contact = template.HTML(mdContent)
+		}
+	}
+
+	var buf bytes.Buffer
+	err = homeTmpl.Execute(&buf, homeContent)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("./public/index.html", buf.Bytes(), 0660)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func ParseBool(str string) (bool, error) {
 	switch str {
@@ -138,10 +208,9 @@ func CreateOutputDirs(targetDir string, outputDirs []string) (count uint32, err 
 // read file
 // parse file using the parser you created above
 // feed parsed markdown into html renderer and output html
-func ProcessFiles(file os.DirEntry, dir string, p *parser.Parser, renderer *html.Renderer, tmpl *template.Template) error {
+func ProcessFiles(file os.DirEntry, dir string, p *parser.Parser, renderer *html.Renderer, baseTmpl *template.Template) error {
 	filePath := filepath.Join(contentDir, dir, file.Name())
 	fileContent, err := os.ReadFile(filePath)
-
 	if err != nil {
 		return err
 	}
@@ -154,16 +223,12 @@ func ProcessFiles(file os.DirEntry, dir string, p *parser.Parser, renderer *html
 		Body: template.HTML(rendered)}
 
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, page)
+	err = baseTmpl.Execute(&buf, page)
 	if err != nil {
 		return err
 	}
 
-	// root page should be in public dir
 	newPath := filepath.Join(outputDir, dir, file.Name())
-	if dir == "home" && file.Name() == "index.md" {
-		newPath = filepath.Join(outputDir, file.Name())
-	}
 	newPath = strings.TrimSuffix(newPath, ".md") + ".html"
 
 	err = os.WriteFile(newPath, buf.Bytes(), 0660)

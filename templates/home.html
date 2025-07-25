@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>index</title>
+  <title>{{ .Title }}</title>
   <link href="/stylesheets/base.css" rel="stylesheet">
 </head>
 <body>
@@ -14,10 +14,11 @@
       <li><a href="/now">Now</a></li>
     </ul>
   </nav>
-  
-<h1 id="now">Now</h1>
-
-<p>Saw this idea on <a href="https://sive.rs/nowff" target="_blank">Derek Sivers</a> and thought it was neat so I decided to take his advice and make my own.</p>
-
+  <div>{{ .Body }}</div>
+  <hr class="home-divider" />
+  <div class="side-by-side">
+    <div>{{ .Projects }}</div>
+    <div>{{ .Contact }}</div>
+  </div>
 </body>
 </html>
