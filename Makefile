@@ -1,18 +1,21 @@
+.PHONY: deploy
+deploy: install build sync invalidate-cache
+
 .PHONY: clean
 clean:
 	rm -rf public
 
-.PHONY: test
-test:
-	go test
+.PHONY: install
+install: 
+	go install .
+
+.PHONY: build
+build: 
+	lighthouse build
 
 .PHONY: sync
 sync: check-s3-bucket
 	aws s3 sync ./public s3://$(S3_BUCKET)
-
-.PHONY: build
-build: 
-	lighthouse
 
 .PHONY: invalidate-cache
 invalidate-cache: check-cloudfront-id-sub check-cloudfront-id-root

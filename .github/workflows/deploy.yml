@@ -40,8 +40,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Run Makefile
-        run: make all
+      - name: deploy
+        run: make deploy
         env:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           CLOUDFRONT_ID_SUB: ${{ secrets.CLOUDFRONT_ID_SUB }}
