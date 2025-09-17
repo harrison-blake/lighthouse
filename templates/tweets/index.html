@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tweets</title>
+    <link rel="stylesheet" href="/stylesheets/output.css">
+</head>
+<body>
+    <div>
+        <div>
+            {{template "nav.html"}}
+        </div>
+
+        <h1>Tweets</h1>
+        <ul>
+            {{range .Tweets}}
+                <li>{{.}}</li>
+            {{end}}
+        </ul>
+    </div>
+
+    <footer>
+        {{template "footer.html"}}
+    </footer>
+</body>
+</html>

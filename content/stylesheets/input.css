@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.link-underline {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness 0.2s ease-in-out;
+}
+
+.link-underline:hover {
+  text-decoration-thickness: 2px;
+}
