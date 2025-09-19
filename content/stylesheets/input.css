@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  overflow-y: scroll;
+}
+
 .link-underline {
   text-decoration: underline;
   text-underline-offset: 0.2em;
