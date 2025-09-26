@@ -1,4 +1,4 @@
-module lighthouse
+module github.com/harrison-blake/lighthouse
 
 go 1.24.1
 
