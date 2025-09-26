@@ -16,3 +16,7 @@ html {
 .link-underline:hover {
   text-decoration-thickness: 2px;
 }
+
+.max-w-custom {
+  max-width: 60rem;
+}

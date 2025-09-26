@@ -270,10 +270,6 @@ func Build() {
 
 	pool.Run(phase2Jobs)
 
-	//********
-	// PHASE 3
-	//********
-
 	var phase3Jobs []*Job
 	compileTailwindJob := &Job{
 		Name: "Compile Tailwind CSS",
@@ -290,6 +286,22 @@ func Build() {
 
 	p1End := time.Now()
 	fmt.Printf("Build took %v\n", p1End.Sub(start))
+}
+
+func CreateOutputDirectories(siteDir string, paths []string) error {
+	err := os.MkdirAll(siteDir, 0750)
+	if err != nil {
+		return fmt.Errorf("failed to create %s directory\n %w", siteDir, err)
+	}
+
+	for _, path := range paths {
+		fullPath := filepath.Join(siteDir, path)
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			return fmt.Errorf("failed to create %s directory\n %w", fullPath, err)
+		}
+	}
+	
+	return nil
 }
 
 func DefaultRenderer() *html.Renderer {
@@ -361,27 +373,10 @@ type Bit struct {
 	Slug    string
 }
 
-
-
 type TweetsPageData struct {
 	Tweets []string
 }
 
 type BitsPageData struct {
 	Bits []Bit
-}
-
-func CreateOutputDirectories(siteDir string, paths []string) error {
-	err := os.MkdirAll(siteDir, 0750)
-	if err != nil {
-		return fmt.Errorf("failed to create %s directory\n %w", siteDir, err)
-	}
-
-	for _, path := range paths {
-		fullPath := filepath.Join(siteDir, path)
-		if err := os.MkdirAll(fullPath, 0755); err != nil {
-			return fmt.Errorf("failed to create %s directory\n %w", fullPath, err)
-		}
-	}
-	return nil
 }
