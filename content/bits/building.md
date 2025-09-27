@@ -1,3 +1,7 @@
+---
+Title: Building a Static Site Generator
+DatePublished: 09/18/2025
+---
 # Building a Static Site Generator (DRAFT)
 
 Okay so you wanna build 

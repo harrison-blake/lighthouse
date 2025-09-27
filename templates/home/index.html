@@ -26,11 +26,12 @@
                 </div>
 
                 <div class="tweets flex-1 p-6 mb-4 md:mb-0">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-1">Tweets</h3>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-1">Latest Tweet</h3>
                     <a href="https://x.com/HRBlakeDev" class="text-sm text-gray-500 hover:underline mb-4 block">@HRBlakeDev</a>
                     <ul class="list-none space-y-2">
                         {{range .Tweets}}
-                            <li><span class="block text-base text-gray-900 mt-1">{{.}}</span></li>
+                            <li><span class="block text-base text-gray-900 mt-1">{{.Content}}</span>
+                                <span class="block text-sm text-gray-500">{{.Frontmatter.DatePublished}}</span></li>
                         {{end}}
                     </ul>
                 </div>
@@ -39,7 +40,8 @@
                     <h3 class="text-2xl font-semibold text-gray-800 mb-4">Bits</h3>
                     <ul class="list-none space-y-2">
                         {{range .Bits}}
-                            <li><a href="/bits/{{.Slug}}.html" class="text-gray-800 link-underline text-lg transition duration-300 ease-in-out">{{.Title}}</a></li>
+                            <li><a href="/bits/{{.Slug}}.html" class="text-gray-800 link-underline text-lg transition duration-300 ease-in-out">{{.FM.Title}}</a>
+                                <span class="block text-sm text-gray-500">{{.FM.DatePublished}}</span></li>
                         {{end}}
                     </ul>
                 </div>

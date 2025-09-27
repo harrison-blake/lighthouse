@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"html/template"
@@ -17,6 +16,8 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+
+	"github.com/harrison-blake/lighthouse/frontmatter"
 )
 
 var siteDir = "public"
@@ -26,7 +27,7 @@ var stylesheetsSource = "./content/stylesheets"
 var styelsheetsDest = "./public/stylesheets"
 
 var mutex = &sync.Mutex{}
-
+var lighthouseFS = os.DirFS(".")
 
 func Build() {
 	start := time.Now()
@@ -45,27 +46,36 @@ func Build() {
 	phase1Jobs = append(phase1Jobs, createDirsJob)
 
 	// AGGREGATE TWEET CONTENT
-	var tweetRes []string
-	files, err := fs.ReadDir(os.DirFS("."), "content/tweets")
+	var tweets []TweetPageData
+	files, err := fs.ReadDir(lighthouseFS, "content/tweets")
 	if err != nil {
 		log.Fatalf("FAILED TO READ DIRECTORY: %v", err)
 	}
 
 	for _, file := range files {
-		if file.Name() == ".DS_Store" {
+		fileName := file.Name()
+		if fileName == ".DS_Store" {
 			continue
 		}
 
 		j := &Job{
-			Name: file.Name(),
+			Name: fmt.Sprintf("parse tweet: %v", fileName),
 			F: func() error {
-				content, err := os.ReadFile("content/tweets/" + file.Name())
+				fsFile, err := lighthouseFS.Open(fmt.Sprintf("content/tweets/%v", fileName))
+				if err != nil {
+					return err
+				}
+				fm, content, err := frontmatter.Parse(fsFile)
+
+				defer fsFile.Close()
 				if err != nil {
 					return err
 				}
 
+				tweet := TweetPageData{Content: content, Frontmatter: fm}
+
 				mutex.Lock()
-				tweetRes = append(tweetRes, strings.TrimSpace(string(content)))
+				tweets = append(tweets, tweet)
 				mutex.Unlock()
 				return nil
 			},
@@ -74,45 +84,39 @@ func Build() {
 	}
 
 	// AGGREGATE BITS
-	var bitsRes []Bit
-	bitFiles, err := fs.ReadDir(os.DirFS("."), "content/bits")
+	var bits []Bit
+	bitFiles, err := fs.ReadDir(lighthouseFS, "content/bits")
 	if err != nil {
 		log.Fatalf("FAILED TO READ DIRECTORY: %v", err)
 	}
 
 	for _, file := range bitFiles {
-		if file.Name() == ".DS_Store" {
+		bitsFileName := file.Name()
+		if bitsFileName == ".DS_Store" {
 			continue
 		}
 		
 		j := &Job{
-			Name: fmt.Sprintf("get %v", file.Name()),
+			Name: fmt.Sprintf("get %v", bitsFileName),
 			F: func() error {
-				file, err := os.Open("content/bits/" + file.Name())
+				fsFile, err := os.Open("content/bits/" + bitsFileName)
 				if err != nil {
 					return err
 				}
-				defer file.Close()
+				defer fsFile.Close()
 
-				scanner := bufio.NewScanner(file)
-				scanner.Scan()
-				title := strings.Trim(scanner.Text(), "# ")
-
-				var content strings.Builder
-                for scanner.Scan() {
-                    content.WriteString(scanner.Text() + "\n")
-                }                
+				fm, content, err := frontmatter.Parse(fsFile)        
 
 				p := DefaultParser()
-				doc := p.Parse([]byte(content.String()))
+				doc := p.Parse([]byte(content))
 				r := DefaultRenderer()
 				html := markdown.Render(doc, r)
 
 				mutex.Lock()
-				bitsRes = append(bitsRes, Bit{
-					Title:   title,
+				bits = append(bits, Bit{
 					Content: template.HTML(html),
-					Slug:    strings.ReplaceAll(strings.ToLower(title), " ", "-"),
+					FM:      fm,
+					Slug:    strings.ReplaceAll(strings.ToLower(fm["Title"]), " ", "-"),
 				})
 
 				mutex.Unlock()
@@ -139,25 +143,21 @@ func Build() {
 				return err
 			}
 
-			// Get top 3 tweets
-			var topTweets []string
+			// Get top 3 tweets (NEEDS A REFACTOR BADLY BUT IM FEELING LAZY)
+			var topTweets []TweetPageData
 			mutex.Lock()
-			if len(tweetRes) > 3 {
-				topTweets = tweetRes[:3]
-			} else {
-				topTweets = tweetRes
-			}
+			topTweets = tweets[:1]
 			mutex.Unlock()
 
 			// Get top 3 bits
 			var topBits []Bit
 			mutex.Lock()
-			if len(bitsRes) > 3 {
-				for _, bit := range bitsRes[:3] {
+			if len(bits) > 3 {
+				for _, bit := range bits[:3] {
 					topBits = append(topBits, bit)
 				}
 			} else {
-				for _, bit := range bitsRes {
+				for _, bit := range bits {
 					topBits = append(topBits, bit)
 				}
 			}
@@ -219,7 +219,7 @@ func Build() {
 			}
 
 			data := BitsPageData{
-				Bits: bitsRes,
+				Bits: bits,
 			}
 
 			var buf bytes.Buffer
@@ -239,16 +239,16 @@ func Build() {
 	phase2Jobs = append(phase2Jobs, bitsPageJob)
 
 	// RENDER BITS SHOW PAGES	
-	for _, bit := range bitsRes {
+	for _, bit := range bits {
 		j := &Job{
-			Name: fmt.Sprintf("Render Bit: %s", bit.Title),
+			Name: fmt.Sprintf("Render Bit: %s", bit.FM["Title"]),
 			F: func() error {
 				bitShowTempl, err := template.ParseFiles("./templates/bits/show.html", "./templates/partials/nav.html", "./templates/partials/footer.html")
 				if err != nil {
 					return err
 				}
 
-				slug := strings.ReplaceAll(strings.ToLower(bit.Title), " ", "-")
+				slug := strings.ReplaceAll(strings.ToLower(bit.FM["Title"]), " ", "-")
 				outputPath := fmt.Sprintf("./public/bits/%s.html", slug)
 
 				var buf bytes.Buffer
@@ -363,18 +363,19 @@ func (wp *WorkerPool) Run(jobBatch []*Job) {
 }
 
 type HomepageData struct {
-	Tweets []string
+	Tweets []TweetPageData
 	Bits   []Bit
 }
 
 type Bit struct {
-	Title   string
 	Content template.HTML
+	FM      map[string]string
 	Slug    string
 }
 
-type TweetsPageData struct {
-	Tweets []string
+type TweetPageData struct {
+	Content     string
+	Frontmatter map[string]string
 }
 
 type BitsPageData struct {
