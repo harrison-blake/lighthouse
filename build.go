@@ -112,8 +112,6 @@ func Build() {
 				r := DefaultRenderer()
 				rendered := markdown.Render(doc, r)
 
-				fmt.Println(string(rendered))
-
 				mutex.Lock()
 				bits = append(bits, Bit{
 					Content: template.HTML(rendered),
@@ -245,7 +243,6 @@ func Build() {
 		j := &Job{
 			Name: fmt.Sprintf("Render Bit: %s", bit.FM["Title"]),
 			F: func() error {
-				fmt.Printf("Bit data: %+v\n", bit)
 				bitShowTempl, err := template.ParseFiles("./templates/bits/show.html", "./templates/partials/nav.html", "./templates/partials/footer.html")
 				if err != nil {
 					return err
