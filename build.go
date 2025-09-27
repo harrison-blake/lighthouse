@@ -99,22 +99,24 @@ func Build() {
 		j := &Job{
 			Name: fmt.Sprintf("get %v", bitsFileName),
 			F: func() error {
-				fsFile, err := os.Open("content/bits/" + bitsFileName)
+				fsFile, err := lighthouseFS.Open("content/bits/" + bitsFileName)
 				if err != nil {
 					return err
 				}
 				defer fsFile.Close()
 
-				fm, content, err := frontmatter.Parse(fsFile)        
+				fm, content, err := frontmatter.Parse(fsFile)     
 
 				p := DefaultParser()
 				doc := p.Parse([]byte(content))
 				r := DefaultRenderer()
-				html := markdown.Render(doc, r)
+				rendered := markdown.Render(doc, r)
+
+				fmt.Println(string(rendered))
 
 				mutex.Lock()
 				bits = append(bits, Bit{
-					Content: template.HTML(html),
+					Content: template.HTML(rendered),
 					FM:      fm,
 					Slug:    strings.ReplaceAll(strings.ToLower(fm["Title"]), " ", "-"),
 				})
@@ -243,6 +245,7 @@ func Build() {
 		j := &Job{
 			Name: fmt.Sprintf("Render Bit: %s", bit.FM["Title"]),
 			F: func() error {
+				fmt.Printf("Bit data: %+v\n", bit)
 				bitShowTempl, err := template.ParseFiles("./templates/bits/show.html", "./templates/partials/nav.html", "./templates/partials/footer.html")
 				if err != nil {
 					return err
@@ -312,7 +315,7 @@ func DefaultRenderer() *html.Renderer {
 }
 
 func DefaultParser() *parser.Parser {
-	defaultExtensions := parser.CommonExtensions | parser.AutoHeadingIDs
+	defaultExtensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 
 	return parser.NewWithExtensions(defaultExtensions)
 }
