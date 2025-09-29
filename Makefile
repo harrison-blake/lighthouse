@@ -1,5 +1,5 @@
 .PHONY: deploy
-deploy: install build sync invalidate-cache
+deploy: install test build sync invalidate-cache
 
 .PHONY: clean
 clean:
@@ -8,6 +8,10 @@ clean:
 .PHONY: install
 install: 
 	go install .
+
+.PHONY: test
+test:
+	go test ./...
 
 .PHONY: build
 build: 
