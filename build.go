@@ -21,7 +21,6 @@ import (
 )
 
 var siteDir = "public"
-var partials = "./templates/partials"
 var outputDirs = []string{"bits", "about", "stylesheets"}
 var stylesheetsSource = "./content/stylesheets"
 var styelsheetsDest = "./public/stylesheets"
@@ -35,6 +34,7 @@ func Build() {
 	//********
 	// PHASE 1
 	//********
+	r := DefaultRenderer()
 
 	var phase1Jobs []*Job
 	createDirsJob := &Job{
@@ -105,11 +105,13 @@ func Build() {
 				}
 				defer fsFile.Close()
 
-				fm, content, err := frontmatter.Parse(fsFile)     
+				fm, content, err := frontmatter.Parse(fsFile)  
+				if err != nil {
+					return err
+				}   
 
 				p := DefaultParser()
 				doc := p.Parse([]byte(content))
-				r := DefaultRenderer()
 				rendered := markdown.Render(doc, r)
 
 				mutex.Lock()
@@ -193,8 +195,24 @@ func Build() {
 				return err
 			}
 
+			fsFile, err := lighthouseFS.Open("content/about/about.md")
+				if err != nil {
+					return err
+				}
+
+			_, content, err := frontmatter.Parse(fsFile)
+			if err != nil {
+				return err
+			}
+
+			p := DefaultParser()
+			doc := p.Parse([]byte(content))
+			rendered := markdown.Render(doc, r)
+
+			data := map[string]template.HTML{"Content": template.HTML(rendered),}
+
 			var buf bytes.Buffer
-			err = aboutTempl.Execute(&buf, nil)
+			err = aboutTempl.Execute(&buf, data)
 			if err != nil {
 				return err
 			}
@@ -304,6 +322,7 @@ func CreateOutputDirectories(siteDir string, paths []string) error {
 	return nil
 }
 
+// CAN reuse rendered
 func DefaultRenderer() *html.Renderer {
 	htmlFlags := html.CommonFlags | html.HrefTargetBlank
 	opts := html.RendererOptions{Flags: htmlFlags}
@@ -311,6 +330,7 @@ func DefaultRenderer() *html.Renderer {
 	return html.NewRenderer(opts)
 }
 
+// CANNOT reuse parser 
 func DefaultParser() *parser.Parser {
 	defaultExtensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 
