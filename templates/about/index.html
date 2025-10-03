@@ -10,10 +10,11 @@
             <div class="upper text-center mb-8">
                 <nav> {{template "nav.html"}} </nav>
 
-                <h1 class="text-4xl font-serif font-extrabold text-gray-900 leading-tight mb-8">About Me</h1>
-                
-                <p class="text-lg text-gray-700 max-w-2xl mx-auto"> {{.Content}}
-                </p>
+                <h1 class="text-4xl font-serif font-extrabold text-gray-900 leading-tight mb-4">About Me</h1>
+            </div>
+            <hr class="w-full my-8 border-gray-300">
+            <div class="prose lg:prose-xl max-w-none prose-lists">
+                {{.Content}}
             </div>
         </div>
     </main>

@@ -1,27 +1,12 @@
 ---
 LastEditedAt: 09/29/2025
 ---
-late start to life
-- highschool
-- college attemp
+I moved to Philadelphia at the beginning of 2025 after being in Arizona for 6 months. I love the people of Arizona but that state should not exist. We should get rid of it. Humans are not meant to exist there. It's too damn hot. While I was there, I worked as a field organizer in Phoenix for Progressive Victory. I knocked on over 3000 doors, had hundreds of conversations, helped teach people how to canvass(knock doors) both in person and remotely, and registered dozens of people to vote. The work was fulfilling and it taught me one of the most valueable lesson to date. How to deal with rejection. People do not like when strangers knock on their door. Double it if that stranger wants talk about voting. </br></br> 
 
-move to denver
-- odd jobs till covid layoffs
-- finding turing
+Before the field organizer gig, I was a software developer for Itron's DEM(Distributed Energy Management) team. Itron is a utilities company in Denver working on a multi-tenant software platform that provides services and insights to grid operators. I was building, designing, and fixing API's to meet all of our customer's needs. Most of the work consisted of adding features to and maintaining IntelliSource, a ruby on rails monolith, and my teams main customer facing application.</br></br> 
 
-getting a real job
-- learned a ton about writing software at a big company was like
-- adhd diagnosis and medication
-- getting laid off again
+Now I'm in the middle of the job search and working on a few things. Most recentely, I've picked up Golang, a statically typed, compiled language which resembles C but with a garbage collector. This portfolio is built using a Go executable, that takes markdown files and injects the content into html templates. View the code [**here**](https://github.com/harrison-blake/lighthouse). I'm going through the Carnegie Melon University course Introduction to Computer Systems to get a better feeling for how software is interacting with hardware. You can look at some of the work for the course [**here**](https://github.com/harrison-blake/computer_systems_lab).</br></br> 
 
-work before the election
-- sense of urgency that pushed me to it
-- what I learned
+A little about myself... my 2 favorite movies are Waking Life by Richard Linklater and Barry Lyndon by Stanley Kubrick. My favorite book is Ham on Rye by Charles Bukkowski. When I'm not coding I spend my time watching movies, reading, playing soccer and skiing during the winter.</br></br> 
 
-what I missed about tech
-- missing out
-- what I've been working on
-- what im working on now
-
-
-
+If you're in Philly and want to grab a coffee and/or chat you can reach me by email at harrison.r.blake@gmail.com. I'm also on [**Twitter**](https://x.com/HRBlakeDev) and [**LinkedIn**](https://www.linkedin.com/in/harrison-r-blake/).

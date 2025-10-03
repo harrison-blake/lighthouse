@@ -35,12 +35,10 @@ make deploy
 ```
 
 ## CI/CD w/ Github actions
-add same secrets to github repo under `actions secrets`
+add variables to github repo under `actions secrets`
 
 AWS CLI creds needed as well.
 ```
 AWS_SECRET_ACCESS_KEY
 AWS_ACCESS_KEY_ID
 ```
-Current workflow deploys on any merge into main or push to main.
-
