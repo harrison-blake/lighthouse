@@ -23,8 +23,8 @@ sync: check-s3-bucket
 
 .PHONY: invalidate-cache
 invalidate-cache: check-cloudfront-id-sub check-cloudfront-id-root
-	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_SUB) --paths /
-	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_ROOT) --paths /
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_SUB) --paths /*
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_ROOT) --paths /*
 
 .PHONY: check-cloudfront-id-sub
 check-cloudfront-id-sub:
