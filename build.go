@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -21,12 +22,23 @@ import (
 )
 
 var siteDir = "public"
-var outputDirs = []string{"bits", "about", "stylesheets"}
+var outputDirs = []string{"bits", "about", "stylesheets", "forecasts"}
 var stylesheetsSource = "./content/stylesheets"
 var styelsheetsDest = "./public/stylesheets"
 
 var mutex = &sync.Mutex{}
 var lighthouseFS = os.DirFS(".")
+
+func sanitizeSlug(slug string) (string, error) {
+	slug = strings.ToLower(slug)
+	slug = strings.ReplaceAll(slug, " ", "-")
+	reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
+	if err != nil {
+		return "", err
+	}
+	slug = reg.ReplaceAllString(slug, "")
+	return slug, nil
+}
 
 func Build() {
 	start := time.Now()
@@ -45,9 +57,9 @@ func Build() {
 	}
 	phase1Jobs = append(phase1Jobs, createDirsJob)
 
-	// AGGREGATE TWEET CONTENT
-	var tweets []TweetPageData
-	files, err := fs.ReadDir(lighthouseFS, "content/tweets")
+	// AGGREGATE FORECAST CONTENT
+	var forecasts []Forecast
+	files, err := fs.ReadDir(lighthouseFS, "content/forecasts")
 	if err != nil {
 		log.Fatalf("FAILED TO READ DIRECTORY: %v", err)
 	}
@@ -59,23 +71,34 @@ func Build() {
 		}
 
 		j := &Job{
-			Name: fmt.Sprintf("parse tweet: %v", fileName),
+			Name: fmt.Sprintf("parse forecast: %v", fileName),
 			F: func() error {
-				fsFile, err := lighthouseFS.Open(fmt.Sprintf("content/tweets/%v", fileName))
+				fsFile, err := lighthouseFS.Open(fmt.Sprintf("content/forecasts/%v", fileName))
 				if err != nil {
 					return err
 				}
-				fm, content, err := frontmatter.Parse(fsFile)
-
 				defer fsFile.Close()
+
+				fm, content, err := frontmatter.Parse(fsFile)
 				if err != nil {
 					return err
 				}
 
-				tweet := TweetPageData{Content: content, Frontmatter: fm}
+				p := DefaultParser()
+				doc := p.Parse([]byte(content))
+				rendered := markdown.Render(doc, r)
+
+				slug, err := sanitizeSlug(fm["Title"])
+				if err != nil {
+					return err
+				}
 
 				mutex.Lock()
-				tweets = append(tweets, tweet)
+				forecasts = append(forecasts, Forecast{
+					Content: template.HTML(rendered),
+					FM:      fm,
+					Slug:    slug,
+				})
 				mutex.Unlock()
 				return nil
 			},
@@ -95,7 +118,7 @@ func Build() {
 		if bitsFileName == ".DS_Store" {
 			continue
 		}
-		
+
 		j := &Job{
 			Name: fmt.Sprintf("get %v", bitsFileName),
 			F: func() error {
@@ -105,20 +128,25 @@ func Build() {
 				}
 				defer fsFile.Close()
 
-				fm, content, err := frontmatter.Parse(fsFile)  
+				fm, content, err := frontmatter.Parse(fsFile)
 				if err != nil {
 					return err
-				}   
+				}
 
 				p := DefaultParser()
 				doc := p.Parse([]byte(content))
 				rendered := markdown.Render(doc, r)
 
+				slug, err := sanitizeSlug(fm["Title"])
+				if err != nil {
+					return err
+				}
+
 				mutex.Lock()
 				bits = append(bits, Bit{
 					Content: template.HTML(rendered),
 					FM:      fm,
-					Slug:    strings.ReplaceAll(strings.ToLower(fm["Title"]), " ", "-"),
+					Slug:    slug,
 				})
 
 				mutex.Unlock()
@@ -145,10 +173,10 @@ func Build() {
 				return err
 			}
 
-			// Get top 3 tweets (NEEDS A REFACTOR BADLY BUT IM FEELING LAZY)
-			var topTweets []TweetPageData
+			// Get top 3 forecasts
+			var topForecasts []Forecast
 			mutex.Lock()
-			topTweets = tweets[:1]
+			topForecasts = forecasts[:1]
 			mutex.Unlock()
 
 			// Get top 3 bits
@@ -166,8 +194,8 @@ func Build() {
 			mutex.Unlock()
 
 			data := HomepageData{
-				Tweets: topTweets,
-				Bits:   topBits,
+				Forecasts: topForecasts,
+				Bits:      topBits,
 			}
 
 			var buf bytes.Buffer
@@ -209,7 +237,7 @@ func Build() {
 			doc := p.Parse([]byte(content))
 			rendered := markdown.Render(doc, r)
 
-			data := map[string]template.HTML{"Content": template.HTML(rendered),}
+			data := map[string]template.HTML{"Content": template.HTML(rendered)}
 
 			var buf bytes.Buffer
 			err = aboutTempl.Execute(&buf, data)
@@ -256,7 +284,36 @@ func Build() {
 	}
 	phase2Jobs = append(phase2Jobs, bitsPageJob)
 
-	// RENDER BITS SHOW PAGES	
+	// RENDER FORECASTS INDEX PAGE
+	forecastsPageJob := &Job{
+		Name: "Render Forecasts Page",
+		F: func() error {
+			forecastsTempl, err := template.ParseFiles("./templates/forecasts/index.html", "./templates/partials/nav.html", "./templates/partials/footer.html")
+			if err != nil {
+				return err
+			}
+
+			data := ForecastsPageData{
+				Forecasts: forecasts,
+			}
+
+			var buf bytes.Buffer
+			err = forecastsTempl.Execute(&buf, data)
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile("./public/forecasts/index.html", buf.Bytes(), 0644)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+	phase2Jobs = append(phase2Jobs, forecastsPageJob)
+
+	// RENDER BITS SHOW PAGES
 	for _, bit := range bits {
 		j := &Job{
 			Name: fmt.Sprintf("Render Bit: %s", bit.FM["Title"]),
@@ -266,11 +323,47 @@ func Build() {
 					return err
 				}
 
-				slug := strings.ReplaceAll(strings.ToLower(bit.FM["Title"]), " ", "-")
+				slug, err := sanitizeSlug(bit.FM["Title"])
+				if err != nil {
+					return err
+				}
 				outputPath := fmt.Sprintf("./public/bits/%s.html", slug)
 
 				var buf bytes.Buffer
 				err = bitShowTempl.Execute(&buf, bit)
+				if err != nil {
+					return err
+				}
+
+				err = os.WriteFile(outputPath, buf.Bytes(), 0644)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			},
+		}
+		phase2Jobs = append(phase2Jobs, j)
+	}
+
+	// RENDER FORECASTS SHOW PAGES
+	for _, forecast := range forecasts {
+		j := &Job{
+			Name: fmt.Sprintf("Render Forecast: %s", forecast.FM["Title"]),
+			F: func() error {
+				forecastShowTempl, err := template.ParseFiles("./templates/forecasts/show.html", "./templates/partials/nav.html", "./templates/partials/footer.html")
+				if err != nil {
+					return err
+				}
+
+				slug, err := sanitizeSlug(forecast.FM["Title"])
+				if err != nil {
+					return err
+				}
+				outputPath := fmt.Sprintf("./public/forecasts/%s.html", slug)
+
+				var buf bytes.Buffer
+				err = forecastShowTempl.Execute(&buf, forecast)
 				if err != nil {
 					return err
 				}
@@ -292,7 +385,7 @@ func Build() {
 	compileTailwindJob := &Job{
 		Name: "Compile Tailwind CSS",
 		F: func() error {
-						cmd := exec.Command("./tailwindcss", "-i", "./content/stylesheets/input.css", "-o", "./public/stylesheets/output.css", "--config", "tailwind.config.js")
+			cmd := exec.Command("./tailwindcss", "-i", "./content/stylesheets/input.css", "-o", "./public/stylesheets/output.css", "--config", "tailwind.config.js")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			return cmd.Run()
@@ -318,7 +411,7 @@ func CreateOutputDirectories(siteDir string, paths []string) error {
 			return fmt.Errorf("failed to create %s directory\n %w", fullPath, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -330,7 +423,7 @@ func DefaultRenderer() *html.Renderer {
 	return html.NewRenderer(opts)
 }
 
-// CANNOT reuse parser 
+// CANNOT reuse parser
 func DefaultParser() *parser.Parser {
 	defaultExtensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 
@@ -383,8 +476,8 @@ func (wp *WorkerPool) Run(jobBatch []*Job) {
 }
 
 type HomepageData struct {
-	Tweets []TweetPageData
-	Bits   []Bit
+	Forecasts []Forecast
+	Bits      []Bit
 }
 
 type Bit struct {
@@ -393,11 +486,16 @@ type Bit struct {
 	Slug    string
 }
 
-type TweetPageData struct {
-	Content     string
-	Frontmatter map[string]string
+type Forecast struct {
+	Content template.HTML
+	FM      map[string]string
+	Slug    string
 }
 
 type BitsPageData struct {
 	Bits []Bit
+}
+
+type ForecastsPageData struct {
+	Forecasts []Forecast
 }

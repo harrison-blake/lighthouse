@@ -7,7 +7,7 @@ import (
 )
 
 var fs = fstest.MapFS{
-    "sample-tweet.md": {Data: []byte(`---
+    "sample-forecast.md": {Data: []byte(`---
 DatePublished: 08/21/2025
 ---
 body content goes here`)},
@@ -19,21 +19,21 @@ DatePublished: 08/25/2025
 multiple
 lines`)},
 
-"sample-tweet-error-format.md": {Data: []byte(`DatePublished: 08/29/2025
+"sample-forecast-error-format.md": {Data: []byte(`DatePublished: 08/29/2025
 ---
 body content goes here`)},
 }
 
-func TestParseOnTweet(t *testing.T) {
-	file, _ := fs.Open("sample-tweet.md")
+func TestParseOnForecast(t *testing.T) {
+	file, _ := fs.Open("sample-forecast.md")
 	frontmatter, body, _ := frontmatter.Parse(file)
 
-	expectedTweet := make(map[string]string)
-	expectedTweet["DatePublished"] = "08/21/2025"
+	expectedForecast := make(map[string]string)
+	expectedForecast["DatePublished"] = "08/21/2025"
 	expectedBody := "body content goes here"
 
-	if frontmatter["DatePublished"] != expectedTweet["DatePublished"] {
-		t.Errorf("got %v, expected %v", frontmatter["DatePublished"], expectedTweet["DatePublished"])
+	if frontmatter["DatePublished"] != expectedForecast["DatePublished"] {
+		t.Errorf("got %v, expected %v", frontmatter["DatePublished"], expectedForecast["DatePublished"])
 	}
 	
 	if body != expectedBody {
@@ -64,7 +64,7 @@ func TestParseOnBit(t *testing.T) {
 }
 
 func TestFrontmatterFormatError(t *testing.T) {
-	file, _ := fs.Open("sample-tweet-error-format.md")
+	file, _ := fs.Open("sample-forecast-error-format.md")
 	frontmatter, body, err := frontmatter.Parse(file)
 
 	if frontmatter != nil {

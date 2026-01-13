@@ -1,5 +1,5 @@
 .PHONY: deploy
-deploy: install test build sync invalidate-cache
+deploy: install test build sync invalidate-cache-all
 
 .PHONY: clean
 clean:
@@ -21,10 +21,15 @@ build:
 sync: check-s3-bucket
 	aws s3 sync ./public s3://$(S3_BUCKET)
 
-.PHONY: invalidate-cache
+.PHONY: invalidate-cache-all
 invalidate-cache: check-cloudfront-id-sub check-cloudfront-id-root
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_SUB) --paths /*
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_ROOT) --paths /*
+
+.PHONY: invalidate-cache-about
+invalidate-cache-about: check-cloudfront-id-sub check-cloudfront-id-root
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_SUB) --paths /about
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID_ROOT) --paths /about
 
 .PHONY: check-cloudfront-id-sub
 check-cloudfront-id-sub:

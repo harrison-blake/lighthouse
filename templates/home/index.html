@@ -25,13 +25,13 @@
                     </ul>
                 </div>
 
-                <div class="tweets flex-1 p-6 mb-4 md:mb-0">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-1">Latest Tweet</h3>
-                    <a href="https://x.com/HRBlakeDev" class="text-sm text-gray-500 hover:underline mb-4 block">@HRBlakeDev</a>
+                <div class="forecasts flex-1 p-6 mb-4 md:mb-0">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-1">Latest Forecast</h3>
+                    <a href="https://manifold.markets/HarrisonBlake" class="text-sm text-gray-500 hover:underline mb-4 block">@HarrisonBlake on Manifold</a>
                     <ul class="list-none space-y-2">
-                        {{range .Tweets}}
-                            <li><span class="block text-base text-gray-900 mt-1">{{.Content}}</span>
-                                <span class="block text-sm text-gray-500">{{.Frontmatter.DatePublished}}</span></li>
+                        {{range .Forecasts}}
+                            <li><a href="/forecasts/{{.Slug}}.html" class="text-gray-800 link-underline text-lg transition duration-300 ease-in-out">{{.FM.Title}}</a>
+                                <span class="block text-sm text-gray-500">{{.FM.DatePublished}}</span></li>
                         {{end}}
                     </ul>
                 </div>
